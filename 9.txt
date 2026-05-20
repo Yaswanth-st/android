@@ -1,0 +1,146 @@
+HandlerLooperDemo
+
+
+MainActivity.java
+
+
+package com.example.handlerlooperdemo;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class MainActivity extends AppCompatActivity {
+
+    private TextView tvStatus;
+    private Button btnSendTask;
+
+    // Handler for UI Thread
+    private Handler mainHandler;
+
+    // Handler for Background Thread
+    private Handler backgroundHandler;
+
+    private Thread workerThread;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        tvStatus = findViewById(R.id.tvStatus);
+        btnSendTask = findViewById(R.id.btnSendTask);
+
+        // UI thread handler
+        mainHandler = new Handler(Looper.getMainLooper());
+
+        // Start background thread
+        startBackgroundThread();
+
+        btnSendTask.setOnClickListener(v -> sendTaskToBackground());
+    }
+
+    private void startBackgroundThread() {
+        workerThread = new Thread(() -> {
+
+            // Prepare Looper for background thread
+            Looper.prepare();
+
+            // Create handler attached to this thread's looper
+            backgroundHandler = new Handler(Looper.myLooper()) {
+                @Override
+                public void handleMessage(Message msg) {
+
+                    String taskName = (String) msg.obj;
+
+                    // Update UI - Task received
+                    mainHandler.post(() ->
+                            tvStatus.setText("Task received: " + taskName));
+
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    // Update UI - Processing
+                    mainHandler.post(() ->
+                            tvStatus.setText("Task processing..."));
+
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                    // Update UI - Completed
+                    mainHandler.post(() ->
+                            tvStatus.setText("Task completed"));
+                }
+            };
+
+            // Start message loop
+            Looper.loop();
+        });
+
+        workerThread.start();
+    }
+
+    private void sendTaskToBackground() {
+        if (backgroundHandler == null) {
+            tvStatus.setText("Background thread not ready yet");
+            return;
+        }
+
+        Message message = backgroundHandler.obtainMessage();
+        message.obj = "Example Task";
+
+        backgroundHandler.sendMessage(message);
+
+        tvStatus.setText("Task sent to background thread...");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        if (backgroundHandler != null) {
+            backgroundHandler.getLooper().quitSafely();
+        }
+    }
+}
+
+
+
+-------------------------------------------
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Click the button to send a task"
+        android:textSize="18sp"
+        android:layout_marginBottom="24dp" />
+
+    <Button
+        android:id="@+id/btnSendTask"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send Task" />
+
+</LinearLayout>

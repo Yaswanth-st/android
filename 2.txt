@@ -1,0 +1,113 @@
+Implicit Intent
+
+MainActivity.java
+
+
+package com.example.implicitintentapp;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    EditText urlEditText;
+    Button openLinkButton;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        urlEditText = findViewById(R.id.urlEditText);
+        openLinkButton = findViewById(R.id.openLinkButton);
+
+        openLinkButton.setOnClickListener(v -> {
+            String url = urlEditText.getText().toString().trim();
+
+            // Ensure URL starts with http/https
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "https://" + url;
+            }
+
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+
+            // Optional: try to force Chrome if installed
+            intent.setPackage("com.android.chrome");
+
+            try {
+                startActivity(intent);
+            } catch (Exception e) {
+                // Chrome not installed or no app can handle
+                intent.setPackage(null); // remove package restriction
+                try {
+                    startActivity(intent);
+                } catch (Exception ex) {
+                    Toast.makeText(MainActivity.this,
+                            "No application can handle this URL",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+}
+
+-----------------------------------------------------------------
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/urlEditText"
+        android:hint="Enter URL (e.g., https://google.com)"
+        android:inputType="textUri"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/openLinkButton"
+        android:text="Open Link"
+        android:layout_marginTop="16dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</LinearLayout>
+
+
+--------------------------------------------------
+androidmanifest.xml
+
+
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.implicitintentapp">
+
+    <application
+        android:allowBackup="true"
+        android:label="ImplicitIntentApp"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ImplicitIntentApp">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"> <!-- REQUIRED for Android 12+ -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

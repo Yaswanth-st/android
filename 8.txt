@@ -1,0 +1,152 @@
+InputEventsApp
+
+MainActivity.java
+
+
+package com.example.inputeventsapp;
+
+import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    Button btnClick, btnLongClick;
+    TextView tvResult;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        btnClick = findViewById(R.id.btnClick);
+        btnLongClick = findViewById(R.id.btnLongClick);
+        tvResult = findViewById(R.id.tvResult);
+
+        // CLICK EVENT
+        btnClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                tvResult.setText("Click Event Triggered");
+                Toast.makeText(MainActivity.this,
+                        "Button Click Event",
+                        Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // LONG CLICK EVENT
+        btnLongClick.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                tvResult.setText("Long Click Event Triggered");
+                Toast.makeText(MainActivity.this,
+                        "Button Long Click Event",
+                        Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+
+        // TOUCH EVENT
+        tvResult.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    tvResult.setText("Touch Event Detected");
+                    Toast.makeText(MainActivity.this,
+                            "Touch Event on TextView",
+                            Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+        });
+    }
+}
+
+
+
+-----------------------------------------------------------------------------
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:gravity="center_horizontal">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Input Events Demo"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="16dp" />
+
+    <Button
+        android:id="@+id/btnClick"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Click Event" />
+
+    <Button
+        android:id="@+id/btnLongClick"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Long Click Event"
+        android:layout_marginTop="12dp" />
+
+    <TextView
+        android:id="@+id/tvResult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Event Output will appear here"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="#EEEEEE"
+        android:layout_marginTop="20dp" />
+
+</LinearLayout>
+
+
+
+-------------------------------------------------------------
+AndroidManifest.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.inputeventsapp">
+
+    <application
+        android:allowBackup="true"
+        android:label="InputEventsApp"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.InputEventsApp">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+    </application>
+
+</manifest>

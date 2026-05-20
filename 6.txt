@@ -1,0 +1,298 @@
+Notification Manager
+
+MainActivity.java
+
+
+package com.example.notificationmanager;
+
+import android.Manifest;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.os.Build;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+
+    private static final int NOTIFICATION_PERMISSION_CODE = 100;
+
+    NotificationManager notificationManager;
+    NotificationCompat.Builder builder;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        Button btnSimpleNotification = findViewById(R.id.btnSimpleNotification);
+        Button btnNotificationIcon = findViewById(R.id.btnNotificationIcon);
+        Button btnNotificationImage = findViewById(R.id.btnNotificationImage);
+        Button btnNotificationWithGroupConvo = findViewById(R.id.btnNotificationWithGroupConvo);
+        Button btnNotificationSemantic = findViewById(R.id.btnNotificationSemantic);
+
+        btnSimpleNotification.setOnClickListener(this);
+        btnNotificationIcon.setOnClickListener(this);
+        btnNotificationImage.setOnClickListener(this);
+        btnNotificationWithGroupConvo.setOnClickListener(this);
+        btnNotificationSemantic.setOnClickListener(this);
+
+        notificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    "1",
+                    "My Notification",
+                    NotificationManager.IMPORTANCE_DEFAULT
+            );
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        builder = new NotificationCompat.Builder(this, "1")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setAutoCancel(true);
+
+        requestNotificationPermission();
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        NOTIFICATION_PERMISSION_CODE
+                );
+            }
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.btnSimpleNotification) {
+            simpleNotification();
+        } else if (v.getId() == R.id.btnNotificationIcon) {
+            notificationWithIcon();
+        } else if (v.getId() == R.id.btnNotificationImage) {
+            notificationWithImage();
+        } else if (v.getId() == R.id.btnNotificationWithGroupConvo) {
+            notificationWithGroupConversation();
+        } else if (v.getId() == R.id.btnNotificationSemantic) {
+            notificationSemantic();
+        }
+    }
+
+    private void simpleNotification() {
+        builder.setContentTitle("Simple Notification")
+                .setContentText("This is a simple notification")
+                .setStyle(null);
+        notificationManager.notify(1, builder.build());
+    }
+
+    private void notificationWithIcon() {
+        builder.setContentTitle("Notification With Icon")
+                .setContentText("Icon notification")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setStyle(null);
+        notificationManager.notify(2, builder.build());
+    }
+
+    private void notificationWithImage() {
+        Bitmap bitmap = BitmapFactory.decodeResource(
+                getResources(),
+                R.drawable.sample_image // <-- your large image
+        );
+
+        NotificationCompat.Builder imageNotification = new NotificationCompat.Builder(this, "1")
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Notification With Image")
+                .setContentText("Big picture notification")
+                .setStyle(new NotificationCompat.BigPictureStyle()
+                        .bigPicture(bitmap)
+                        .bigLargeIcon((Bitmap) null)) // <-- cast null to Bitmap
+                .setAutoCancel(true);
+
+        notificationManager.notify(3, imageNotification.build());
+    }
+
+
+    private void notificationWithGroupConversation() {
+        NotificationCompat.MessagingStyle messagingStyle =
+                new NotificationCompat.MessagingStyle("You");
+
+        // Add messages with timestamps (long)
+        messagingStyle.addMessage("Hey, are you coming today?", System.currentTimeMillis() - 60000, "Saravana");
+        messagingStyle.addMessage("Yes, I will be there.", System.currentTimeMillis() - 30000, "Parthiban");
+        messagingStyle.addMessage("Great! See you soon.", System.currentTimeMillis(), "Leo");
+
+        builder.setContentTitle("Group Conversation")
+                .setContentText("3 new messages")
+                .setStyle(messagingStyle)
+                .setSmallIcon(R.drawable.ic_launcher_foreground);
+
+        notificationManager.notify(4, builder.build());
+    }
+
+
+    private void notificationSemantic() {
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("msg", "Notification Marked as Read");
+
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(
+                        this,
+                        0,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+
+        NotificationCompat.Action action =
+                new NotificationCompat.Action.Builder(
+                        R.drawable.ic_launcher_foreground,
+                        "MARK READ",
+                        pendingIntent
+                )
+                        .setSemanticAction(NotificationCompat.Action.SEMANTIC_ACTION_MARK_AS_READ)
+                        .build();
+
+        builder.addAction(action)
+                .setContentTitle("Semantic Notification")
+                .setContentText("Notification with semantic action")
+                .setStyle(null)
+                .setSmallIcon(R.drawable.ic_launcher_foreground);
+
+        notificationManager.notify(5, builder.build());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults) {
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == NOTIFICATION_PERMISSION_CODE) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Notification Permission Granted", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Notification Permission Denied", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (getIntent() != null && getIntent().getExtras() != null) {
+            String value = getIntent().getStringExtra("msg");
+            if (value != null) {
+                Toast.makeText(this, value, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+}
+
+
+
+----------------------------------------------
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="16dp">
+
+    <Button
+        android:id="@+id/btnSimpleNotification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Simple Notification"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnNotificationIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Notification With Icon"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnNotificationImage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Notification With Image"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnNotificationWithGroupConvo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Notification With Group Conversation"
+        android:layout_marginBottom="10dp"/>
+
+    <Button
+        android:id="@+id/btnNotificationSemantic"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Notification Semantic Action"/>
+
+</LinearLayout>
+
+
+
+-----------------------------------------
+AndroidManifest.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.notificationmanager">
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NotificationManager">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+        </activity>
+
+    </application>
+
+</manifest>

@@ -1,0 +1,104 @@
+Multithreading(image1.jpg,image2.jpg)
+
+MainActivity.java
+
+
+package com.example.multithreading;
+
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    ImageView img;
+    Button bt1, bt2;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        img = findViewById(R.id.imageView);
+        bt1 = findViewById(R.id.button1);
+        bt2 = findViewById(R.id.button2);
+
+        bt1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        img.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                img.setImageResource(R.drawable.image1);
+                            }
+                        });
+
+                    }
+                }).start();
+            }
+        });
+
+        bt2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        img.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                img.setImageResource(R.drawable.image2);
+                            }
+                        });
+
+                    }
+                }).start();
+            }
+        });
+    }
+}
+
+
+
+-------------------------------------------
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center">
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:layout_margin="20dp"
+        android:background="#DDDDDD" />
+
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Load Image 1"
+        android:layout_margin="10dp" />
+
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Load Image 2"
+        android:layout_margin="10dp" />
+
+</LinearLayout>

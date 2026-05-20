@@ -1,0 +1,369 @@
+LocationAndMaps
+
+MainActivity.java
+package com.example.locationandmaps;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.os.Bundle;
+import android.os.Looper;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.android.gms.location.*;
+import com.google.android.gms.maps.*;
+import com.google.android.gms.maps.model.*;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    private static final int LOCATION_PERMISSION_CODE = 101;
+
+    private TextView txtLatitude, txtLongitude, txtAddress;
+    private Button btnGetLocation, btnZoomIn, btnZoomOut, btnToggleMapType;
+
+    private FusedLocationProviderClient fusedLocationClient;
+    private LocationRequest locationRequest;
+    private LocationCallback locationCallback;
+
+    private GoogleMap mMap;
+    private LatLng lastLatLng;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        txtLatitude = findViewById(R.id.txtLatitude);
+        txtLongitude = findViewById(R.id.txtLongitude);
+        txtAddress = findViewById(R.id.txtAddress);
+
+        btnGetLocation = findViewById(R.id.btnGetLocation);
+        btnZoomIn = findViewById(R.id.btnZoomIn);
+        btnZoomOut = findViewById(R.id.btnZoomOut);
+        btnToggleMapType = findViewById(R.id.btnToggleMapType);
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        // Setup Location Request
+        locationRequest = LocationRequest.create();
+        locationRequest.setPriority(Priority.PRIORITY_HIGH_ACCURACY);
+        locationRequest.setInterval(5000);
+
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                if (locationResult == null) return;
+
+                Location location = locationResult.getLastLocation();
+                updateUI(location);
+                updateMap(location);
+
+                fusedLocationClient.removeLocationUpdates(locationCallback);
+            }
+        };
+
+        SupportMapFragment mapFragment =
+                (SupportMapFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.map);
+
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
+
+        btnGetLocation.setOnClickListener(v -> checkPermissionAndGetLocation());
+
+        btnZoomIn.setOnClickListener(v -> {
+            if (mMap != null)
+                mMap.animateCamera(CameraUpdateFactory.zoomIn());
+        });
+
+        btnZoomOut.setOnClickListener(v -> {
+            if (mMap != null)
+                mMap.animateCamera(CameraUpdateFactory.zoomOut());
+        });
+
+        btnToggleMapType.setOnClickListener(v -> {
+            if (mMap != null) {
+                if (mMap.getMapType() == GoogleMap.MAP_TYPE_NORMAL)
+                    mMap.setMapType(GoogleMap.MAP_TYPE_SATELLITE);
+                else
+                    mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+            }
+        });
+    }
+
+    private void checkPermissionAndGetLocation() {
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_CODE);
+        } else {
+            requestNewLocation();
+        }
+    }
+
+    private void requestNewLocation() {
+        if (ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        fusedLocationClient.requestLocationUpdates(
+                locationRequest,
+                locationCallback,
+                Looper.getMainLooper());
+    }
+
+    private void updateUI(Location location) {
+
+        double lat = location.getLatitude();
+        double lng = location.getLongitude();
+
+        txtLatitude.setText("Latitude: " + lat);
+        txtLongitude.setText("Longitude: " + lng);
+
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+
+        try {
+            List<Address> addresses =
+                    geocoder.getFromLocation(lat, lng, 1);
+
+            if (addresses != null && !addresses.isEmpty()) {
+                txtAddress.setText("Address: "
+                        + addresses.get(0).getAddressLine(0));
+            }
+
+        } catch (IOException e) {
+            txtAddress.setText("Address not found");
+        }
+    }
+
+    private void updateMap(Location location) {
+
+        lastLatLng = new LatLng(
+                location.getLatitude(),
+                location.getLongitude());
+
+        mMap.clear();
+
+        mMap.addMarker(new MarkerOptions()
+                .position(lastLatLng)
+                .title("You are here")
+                .icon(BitmapDescriptorFactory
+                        .defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+
+        mMap.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(lastLatLng, 16));
+    }
+
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+        mMap.getUiSettings().setZoomControlsEnabled(true);
+    }
+}
+
+-----------------------------------------------------
+activity_main.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:background="#F2F2F2">
+
+    <!-- Get Last Location Button -->
+    <Button
+        android:id="@+id/btnGetLocation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Get Last Location"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#6200EE"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Zoom In Button -->
+    <Button
+        android:id="@+id/btnZoomIn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Zoom In"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#6200EE"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Zoom Out Button -->
+    <Button
+        android:id="@+id/btnZoomOut"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Zoom Out"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#6200EE"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Toggle Map Type Button -->
+    <Button
+        android:id="@+id/btnToggleMapType"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Toggle Map Type"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:backgroundTint="#6200EE"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Latitude Text -->
+    <TextView
+        android:id="@+id/txtLatitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Latitude:"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:padding="4dp"/>
+
+    <!-- Longitude Text -->
+    <TextView
+        android:id="@+id/txtLongitude"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Longitude:"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#000000"
+        android:padding="4dp"/>
+
+    <!-- Address Text -->
+    <TextView
+        android:id="@+id/txtAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Address:"
+        android:textSize="16sp"
+        android:textColor="#333333"
+        android:padding="4dp"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- Google Map -->
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+</LinearLayout>
+
+-------------------------------------------------------------
+AndroidManifest.xml
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.locationandmaps">
+
+    <!-- Location Permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <uses-feature android:name="android.hardware.location.gps"/>
+
+    <application
+        android:allowBackup="true"
+        android:label="LocationAndMaps"
+        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDsldP4rA96PRXYbjMoesTr0sHeQsJOBtM"/>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+
+        </activity>
+
+    </application>
+</manifest>
+
+
+-----------------------------------------------
+build.gradle.kts(app)
+
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace = "com.example.locationandmaps"
+    compileSdk {
+        version = release(36)
+    }
+
+    defaultConfig {
+        applicationId = "com.example.locationandmaps"
+        minSdk = 23
+        targetSdk = 36
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.activity)
+    implementation(libs.constraintlayout)
+    implementation("com.google.android.gms:play-services-maps:18.1.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
+}
+
+
+--------------------------------------

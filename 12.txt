@@ -1,0 +1,435 @@
+StudentSQLiteCRUD
+
+
+MainActivity.java
+
+
+package com.example.studentsqlitecrud;
+
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.widget.*;
+
+public class MainActivity extends AppCompatActivity {
+
+    EditText etRoll, etName, etDept, etMobile, etEmail, etCollege, etYear;
+    TextView tvResult;
+    DBHelper db;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        db = new DBHelper(this);
+
+        etRoll = findViewById(R.id.etRoll);
+        etName = findViewById(R.id.etName);
+        etDept = findViewById(R.id.etDept);
+        etMobile = findViewById(R.id.etMobile);
+        etEmail = findViewById(R.id.etEmail);
+        etCollege = findViewById(R.id.etCollege);
+        etYear = findViewById(R.id.etYear);
+        tvResult = findViewById(R.id.tvResult);
+
+        findViewById(R.id.btnAdd).setOnClickListener(v -> addStudent());
+        findViewById(R.id.btnView).setOnClickListener(v -> viewStudents());
+        findViewById(R.id.btnUpdate).setOnClickListener(v -> updateStudent());
+        findViewById(R.id.btnDelete).setOnClickListener(v -> deleteStudent());
+        findViewById(R.id.btnClear).setOnClickListener(v -> clearFields());
+    }
+
+    private boolean isEmpty(String... values) {
+        for (String s : values)
+            if (TextUtils.isEmpty(s)) return true;
+        return false;
+    }
+
+    private void addStudent() {
+        String roll = etRoll.getText().toString();
+        String name = etName.getText().toString();
+        String dept = etDept.getText().toString();
+        String mobile = etMobile.getText().toString();
+        String email = etEmail.getText().toString();
+        String college = etCollege.getText().toString();
+        String year = etYear.getText().toString();
+
+        if (isEmpty(roll, name, dept, mobile, email, college, year)) {
+            Toast.makeText(this, "Fill all fields", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean success = db.insertStudent(roll, name, dept, mobile, email, college, year);
+        Toast.makeText(this, success ? "Inserted successfully" : "Insert failed", Toast.LENGTH_SHORT).show();
+    }
+
+    private void viewStudents() {
+        tvResult.setText(db.getAllStudents());
+    }
+
+    private void updateStudent() {
+        if (isEmpty(etRoll.getText().toString())) {
+            Toast.makeText(this, "Enter Roll Number to update", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean success = db.updateStudent(
+                etRoll.getText().toString(),
+                etName.getText().toString(),
+                etDept.getText().toString(),
+                etMobile.getText().toString(),
+                etEmail.getText().toString(),
+                etCollege.getText().toString(),
+                etYear.getText().toString()
+        );
+        Toast.makeText(this, success ? "Updated successfully" : "Update failed", Toast.LENGTH_SHORT).show();
+    }
+
+    private void deleteStudent() {
+        if (isEmpty(etRoll.getText().toString())) {
+            Toast.makeText(this, "Enter Roll Number to delete", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        boolean success = db.deleteStudent(etRoll.getText().toString());
+        Toast.makeText(this, success ? "Deleted successfully" : "Delete failed", Toast.LENGTH_SHORT).show();
+    }
+
+    private void clearFields() {
+        etRoll.setText("");
+        etName.setText("");
+        etDept.setText("");
+        etMobile.setText("");
+        etEmail.setText("");
+        etCollege.setText("");
+        etYear.setText("");
+        tvResult.setText("Records will appear here...");
+    }
+}
+
+
+-----------------------------------------------------
+DBHelper.java
+
+
+package com.example.studentsqlitecrud;
+
+import android.content.Context;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteDatabase;
+import android.content.ContentValues;
+import android.database.Cursor;
+
+public class DBHelper extends SQLiteOpenHelper {
+
+    private static final String DATABASE_NAME = "StudentDB.db";
+    private static final int DATABASE_VERSION = 1;
+    private static final String TABLE_NAME = "students";
+
+    public static final String COL_ROLL = "roll_no";   // alphanumeric
+    public static final String COL_NAME = "name";
+    public static final String COL_DEPT = "dept";
+    public static final String COL_MOBILE = "mobile";
+    public static final String COL_EMAIL = "email";
+    public static final String COL_COLLEGE = "college";
+    public static final String COL_YEAR = "year";
+
+    public DBHelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        String query = "CREATE TABLE " + TABLE_NAME + " (" +
+                COL_ROLL + " TEXT PRIMARY KEY, " +
+                COL_NAME + " TEXT, " +
+                COL_DEPT + " TEXT, " +
+                COL_MOBILE + " TEXT, " +
+                COL_EMAIL + " TEXT, " +
+                COL_COLLEGE + " TEXT, " +
+                COL_YEAR + " TEXT)";
+        db.execSQL(query);
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS " + TABLE_NAME);
+        onCreate(db);
+    }
+
+    // Insert student
+    public boolean insertStudent(String roll, String name, String dept,
+                                 String mobile, String email,
+                                 String college, String year) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COL_ROLL, roll);
+            values.put(COL_NAME, name);
+            values.put(COL_DEPT, dept);
+            values.put(COL_MOBILE, mobile);
+            values.put(COL_EMAIL, email);
+            values.put(COL_COLLEGE, college);
+            values.put(COL_YEAR, year);
+            long result = db.insert(TABLE_NAME, null, values);
+            return result != -1;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Get all students
+    public String getAllStudents() {
+        StringBuilder buffer = new StringBuilder();
+        try {
+            SQLiteDatabase db = this.getReadableDatabase();
+            Cursor cursor = db.rawQuery("SELECT * FROM " + TABLE_NAME, null);
+
+            if (cursor.getCount() == 0) return "No records found.";
+
+            while (cursor.moveToNext()) {
+                buffer.append("Roll No: ").append(cursor.getString(0)).append("\n");
+                buffer.append("Name: ").append(cursor.getString(1)).append("\n");
+                buffer.append("Dept: ").append(cursor.getString(2)).append("\n");
+                buffer.append("Mobile: ").append(cursor.getString(3)).append("\n");
+                buffer.append("Email: ").append(cursor.getString(4)).append("\n");
+                buffer.append("College: ").append(cursor.getString(5)).append("\n");
+                buffer.append("Year: ").append(cursor.getString(6)).append("\n");
+                buffer.append("-------------------------\n");
+            }
+            cursor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error retrieving records.";
+        }
+        return buffer.toString();
+    }
+
+    // Update student
+    public boolean updateStudent(String roll, String name, String dept,
+                                 String mobile, String email,
+                                 String college, String year) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            ContentValues values = new ContentValues();
+            values.put(COL_NAME, name);
+            values.put(COL_DEPT, dept);
+            values.put(COL_MOBILE, mobile);
+            values.put(COL_EMAIL, email);
+            values.put(COL_COLLEGE, college);
+            values.put(COL_YEAR, year);
+
+            int rows = db.update(TABLE_NAME, values, "roll_no=?", new String[]{roll});
+            return rows > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Delete student
+    public boolean deleteStudent(String roll) {
+        try {
+            SQLiteDatabase db = this.getWritableDatabase();
+            int rows = db.delete(TABLE_NAME, "roll_no=?", new String[]{roll});
+            return rows > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+}
+
+
+
+------------------------------------------------
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F2F2F2">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Student Database (SQLite CRUD)"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:textColor="#6A4CAF"
+            android:layout_gravity="center_horizontal"
+            android:paddingBottom="12dp" />
+
+        <EditText
+            android:id="@+id/etRoll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Roll Number"
+            android:inputType="text"
+            android:padding="8dp" />
+
+        <EditText
+            android:id="@+id/etName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Student Name"
+            android:inputType="textPersonName"
+            android:padding="8dp"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etDept"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Department"
+            android:inputType="textCapCharacters"
+            android:padding="8dp"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etMobile"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Mobile Number"
+            android:inputType="phone"
+            android:padding="8dp"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Email ID"
+            android:inputType="textEmailAddress"
+            android:padding="8dp"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etCollege"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="College Name"
+            android:padding="8dp"
+            android:layout_marginTop="8dp" />
+
+        <EditText
+            android:id="@+id/etYear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Year"
+            android:padding="8dp"
+            android:layout_marginTop="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp">
+
+            <Button
+                android:id="@+id/btnAdd"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="ADD"
+                android:backgroundTint="#6A4CAF"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/btnUpdate"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="UPDATE"
+                android:layout_marginStart="8dp"
+                android:backgroundTint="#6A4CAF"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnDelete"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="DELETE"
+                android:backgroundTint="#6A4CAF"
+                android:textColor="#FFFFFF" />
+
+            <Button
+                android:id="@+id/btnView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="VIEW ALL"
+                android:layout_marginStart="8dp"
+                android:backgroundTint="#6A4CAF"
+                android:textColor="#FFFFFF" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CLEAR"
+            android:layout_marginTop="8dp"
+            android:backgroundTint="#6A4CAF"
+            android:textColor="#FFFFFF" />
+
+        <TextView
+            android:id="@+id/tvResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Records will appear here..."
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:background="#EEEEEE" />
+    </LinearLayout>
+</ScrollView>
+
+
+---------------------------------------------------
+AndroidManifest.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.studentsqlitecrud">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Student SQLite CRUD"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>
+

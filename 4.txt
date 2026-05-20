@@ -1,0 +1,124 @@
+Android Lifecycle
+
+MainActivity.java
+
+
+package com.example.activitylifecycle;
+
+import android.os.Bundle;
+import android.util.Log;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+public class MainActivity extends AppCompatActivity {
+
+    private static final String TAG = "ActivityLifeCycle";
+    private static final String COUNTER_KEY = "counter_value";
+
+    TextView tvCounter;
+    Button btnIncrease;
+    int counter = 0;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        tvCounter = findViewById(R.id.tvCounter);
+        btnIncrease = findViewById(R.id.btnIncrease);
+
+        if (savedInstanceState != null) {
+            counter = savedInstanceState.getInt(COUNTER_KEY);
+            tvCounter.setText("Counter: " + counter);
+        }
+
+        btnIncrease.setOnClickListener(v -> {
+            counter++;
+            tvCounter.setText("Counter: " + counter);
+        });
+
+        Toast.makeText(this, "onCreate()", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onCreate()");
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Toast.makeText(this, "onStart()", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onStart()");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Toast.makeText(this, "onResume()", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onResume()");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Toast.makeText(this, "onPause()", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onPause()");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Toast.makeText(this, "onStop()", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onStop()");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Toast.makeText(this, "onRestart()", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onRestart()");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Toast.makeText(this, "onDestroy()", Toast.LENGTH_SHORT).show();
+        Log.i(TAG, "onDestroy()");
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt(COUNTER_KEY, counter);
+    }
+}
+
+
+
+---------------------------------------------------------------------
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/tvCounter"
+        android:text="Counter: 0"
+        android:textSize="22sp"
+        android:layout_marginBottom="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <Button
+        android:id="@+id/btnIncrease"
+        android:text="Increase Counter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+</LinearLayout>
